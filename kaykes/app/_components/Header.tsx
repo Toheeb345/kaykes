@@ -22,12 +22,12 @@ const menu = [
     },
     {
     id: 3,
-    name: 'AboutUs',
+    name: 'About Us',
     path: '/'
     },
     {
     id: 4,
-    name: 'ContactUs',
+    name: 'Contact Us',
     path: '/'
     },
 ]

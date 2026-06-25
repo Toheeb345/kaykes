@@ -163,7 +163,7 @@ const onApplyAITransformation = (transformation: string, add: boolean) => {
 
 
 
-        <div className=' flex gap-5 mt-10'>
+        <div className=' flex flex-wrap gap-5 mt-10'>
             <label htmlFor="uploadImage">
             <div className=' border rounded-lg flex flex-col items-center p-5 justify-center text-sm hover:border-primary cursor-pointer hover:bg-blue-50'>
                 <Upload />

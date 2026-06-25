@@ -32,7 +32,7 @@ const PopularProducts = () => {
     }
 
   return (
-    <div className=' mt-8'>
+    <div className=' my-8'>
         <h2 className=' font-bold text-3xl'>Popular Products</h2>
         <div className=' grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5'>
             {productList?.map((product: Product, index: number) => (
