@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-export async function DELETE(req: NextResponse){
+export async function DELETE(req: NextRequest){
     const {documentId} = await req.json() 
 
     const result = await axiosClient.delete('/carts/'+documentId)
