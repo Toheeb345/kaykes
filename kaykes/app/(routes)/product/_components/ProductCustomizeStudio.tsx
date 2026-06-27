@@ -1,9 +1,8 @@
 "use client"
 import { Product } from '@/app/_components/PopularProducts'
 import { imageKit } from '@/lib/ImageKitInstance'
-import { Canvas, FabricImage, Rect } from 'fabric'
+import { Canvas, FabricImage } from 'fabric'
 import { Crop, Download, GalleryVerticalEnd, ImageOff, ImageUpscale, Upload } from 'lucide-react'
-import Image from 'next/image'
 import React, { useEffect, useRef, useState } from 'react'
 
 type Props = {
@@ -14,26 +13,10 @@ type Props = {
 const DEFAULT_IMAGE = 'https://ik.imagekit.io/jcnxz8smh/logoipsum-422.png?updatedAt=1781565705839'
 
 const AITransformOptions = [
-    {
-        name: 'BG Remove',
-        icon: ImageOff,
-        imageKitTr: 'e-bgremove'
-    },
-    {
-        name: 'Upscale',
-        icon: ImageUpscale,
-        imageKitTr: 'e-upscale'
-    },
-    {
-        name: 'Smart Crop',
-        icon: Crop,
-        imageKitTr: 'fo-auto'
-    },
-    {
-        name: 'Shadow',
-        icon: GalleryVerticalEnd,
-        imageKitTr: 'e-shadow'
-    },
+    { name: 'BG Remove', icon: ImageOff, imageKitTr: 'e-bgremove' },
+    { name: 'Upscale', icon: ImageUpscale, imageKitTr: 'e-upscale' },
+    { name: 'Smart Crop', icon: Crop, imageKitTr: 'fo-auto' },
+    { name: 'Shadow', icon: GalleryVerticalEnd, imageKitTr: 'e-shadow' },
 ]
 
 const SHIRT_COLORS = [
@@ -47,72 +30,108 @@ const SHIRT_COLORS = [
     { label: 'Pink', value: '#ec4899' },
 ]
 
-const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
+// Fixed canvas size — shirt and fabric canvas must match this exactly
+const CANVAS_SIZE = 400;
 
+const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
     const canvasRef = useRef<any>(null);
-    const shirtRef = useRef<HTMLDivElement>(null);
     const shirtCanvasRef = useRef<HTMLCanvasElement>(null);
     const [canvasInstance, setCanvasInstance] = useState<any>(null)
     const [uploadedImage, setUploadedImage] = useState<string>(DEFAULT_IMAGE)
     const [shirtColor, setShirtColor] = useState<string>('#ffffff')
     const [customColor, setCustomColor] = useState<string>('#ffffff')
 
+    // Init Fabric canvas — same size as shirt canvas
     useEffect(() => {
         if (canvasRef.current) {
             const initCanvas = new Canvas(canvasRef.current, {
-                width: 150,
-                height: 150,
+                width: CANVAS_SIZE,
+                height: CANVAS_SIZE,
                 backgroundColor: 'transparent'
             })
             initCanvas.renderAll();
             setCanvasInstance(initCanvas);
-
-            return () => {
-                initCanvas.dispose()
-            }
+            return () => { initCanvas.dispose() }
         }
     }, [])
 
+    // Add default image to fabric canvas on init
     useEffect(() => {
         if (canvasInstance) {
-            AddDefaultImageToCanvas();
+            AddImageToCanvas(DEFAULT_IMAGE);
             setDesignUrl(uploadedImage);
         }
-    }, [canvasInstance, uploadedImage])
+    }, [canvasInstance])
 
-    const AddDefaultImageToCanvas = async () => {
-        const canvasImageRef = await FabricImage.fromURL(uploadedImage)
+    // Normalize any image to a fixed size on the canvas (150x150 max, centered)
+    const AddImageToCanvas = async (url: string) => {
+        const canvasImageRef = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' })
         canvasInstance.clear();
-        canvasInstance.renderAll();
-        canvasImageRef.scaleX = 0.3;
-        canvasImageRef.scaleY = 0.3;
+
+        const maxSize = 150; // max design size on canvas
+        const scaleX = maxSize / canvasImageRef.width!;
+        const scaleY = maxSize / canvasImageRef.height!;
+        const scale = Math.min(scaleX, scaleY); // keep aspect ratio
+
+        canvasImageRef.scale(scale);
+
+        // Center on canvas
+        canvasImageRef.set({
+            left: (CANVAS_SIZE - canvasImageRef.getScaledWidth()) / 2,
+            top: (CANVAS_SIZE - canvasImageRef.getScaledHeight()) / 2,
+        });
+
         canvasInstance.add(canvasImageRef);
         canvasInstance.renderAll();
     }
 
+    // Redraw shirt with color tint
+    useEffect(() => {
+        const canvas = shirtCanvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        canvas.width = CANVAS_SIZE;
+        canvas.height = CANVAS_SIZE;
+
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.src = product?.productimage[0]?.url;
+
+        img.onload = () => {
+            ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+            if (shirtColor !== '#ffffff') {
+                ctx.globalCompositeOperation = 'multiply';
+                ctx.fillStyle = shirtColor;
+                ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+                ctx.globalCompositeOperation = 'destination-in';
+                ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        };
+    }, [shirtColor, product]);
+
     const onHandleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file) {
-            const uploadImageRef = await imageKit.upload({
-                // @ts-ignore
-                file: file,
-                fileName: file?.name,
-                isPublished: true,
-                useUniqueFileName: false
-            });
+        if (!file) return;
 
+        const uploadImageRef = await imageKit.upload({
             // @ts-ignore
-            const uploadedImageUrl = uploadImageRef?.url;
-            if (uploadedImageUrl) {
-                setUploadedImage(uploadedImageUrl);
-                canvasInstance.clear();
-                canvasInstance.renderAll();
-                const canvasImageRef = await FabricImage.fromURL(uploadedImageUrl)
-                canvasImageRef.scaleX = 0.3;
-                canvasImageRef.scaleY = 0.3;
-                canvasInstance.add(canvasImageRef);
-                canvasInstance.renderAll();
-            }
+            file: file,
+            fileName: file?.name,
+            isPublished: true,
+            useUniqueFileName: false
+        });
+
+        // @ts-ignore
+        const uploadedImageUrl = uploadImageRef?.url;
+        if (uploadedImageUrl) {
+            setUploadedImage(uploadedImageUrl);
+            setDesignUrl(uploadedImageUrl);
+            await AddImageToCanvas(uploadedImageUrl);
         }
     }
 
@@ -124,9 +143,7 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
             let currentTransforms = trParam ? trParam.split(',').filter(Boolean) : [];
 
             if (add) {
-                if (!currentTransforms.includes(transformation)) {
-                    currentTransforms.push(transformation);
-                }
+                if (!currentTransforms.includes(transformation)) currentTransforms.push(transformation);
             } else {
                 currentTransforms = currentTransforms.filter(t => t !== transformation);
             }
@@ -137,7 +154,9 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
                 urlObj.searchParams.delete('tr');
             }
 
-            setUploadedImage(urlObj.toString());
+            const newUrl = urlObj.toString();
+            setUploadedImage(newUrl);
+            AddImageToCanvas(newUrl);
         } catch (error) {
             console.error("Invalid URL:", error);
         }
@@ -147,107 +166,58 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
         return uploadedImage?.includes(transformation) ? false : true;
     }
 
-    // Redraw shirt on canvas whenever color changes
-    useEffect(() => {
-        const canvas = shirtCanvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
-        img.src = product?.productimage[0]?.url;
-
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-
-            // Draw original shirt
-            ctx.drawImage(img, 0, 0);
-
-            // Tint only shirt pixels (transparent areas stay transparent)
-            if (shirtColor !== '#ffffff') {
-                ctx.globalCompositeOperation = 'multiply';
-                ctx.fillStyle = shirtColor;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Clip color to shirt shape only
-                ctx.globalCompositeOperation = 'destination-in';
-                ctx.drawImage(img, 0, 0);
-
-                ctx.globalCompositeOperation = 'source-over';
-            }
-        };
-    }, [shirtColor, product]);
-
     const handleColorChange = (color: string) => {
         setShirtColor(color);
         setCustomColor(color);
     }
 
-    // Download: merges shirt image + canvas design into one image
-    const handleDownload = async () => {
-        const shirtImgEl = shirtRef.current?.querySelector('img') as HTMLImageElement | null;
-        if (!shirtImgEl || !canvasInstance) return;
+    // Download: composites shirt + design at exact position user left it
+    const handleDownload = () => {
+        const shirtCanvas = shirtCanvasRef.current;
+        if (!shirtCanvas || !canvasInstance) return;
 
-        // Create an offscreen canvas
         const offscreen = document.createElement('canvas');
-        offscreen.width = 400;
-        offscreen.height = 400;
+        offscreen.width = CANVAS_SIZE;
+        offscreen.height = CANVAS_SIZE;
         const ctx = offscreen.getContext('2d');
         if (!ctx) return;
 
-        // Draw shirt with color tint
-        const shirtImg = new window.Image();
-        shirtImg.crossOrigin = 'anonymous';
-        shirtImg.src = product?.productimage[0]?.url;
+        // 1. Draw the already-tinted shirt canvas
+        ctx.drawImage(shirtCanvas, 0, 0);
 
-        shirtImg.onload = () => {
-            // Draw shirt
-            ctx.drawImage(shirtImg, 0, 0, 400, 400);
+        // 2. Get fabric canvas as image (preserves exact position + size of design)
+        const designDataUrl = canvasInstance.toDataURL({ format: 'png', multiplier: 1 });
+        const designImg = new window.Image();
+        designImg.src = designDataUrl;
 
-            // Apply shirt color tint (multiply blend)
-            if (shirtColor !== '#ffffff') {
-                ctx.globalCompositeOperation = 'multiply';
-                ctx.fillStyle = shirtColor;
-                ctx.fillRect(0, 0, 400, 400);
-                ctx.globalCompositeOperation = 'destination-in';
-                ctx.drawImage(shirtImg, 0, 0, 400, 400);
-                ctx.globalCompositeOperation = 'source-over';
-            }
+        designImg.onload = () => {
+            // Draw design exactly as it appears — no repositioning
+            ctx.drawImage(designImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-            // Draw design from fabric canvas on top (centered)
-            const designDataUrl = canvasInstance.toDataURL({ format: 'png', multiplier: 1 });
-            const designImg = new window.Image();
-            designImg.src = designDataUrl;
-            designImg.onload = () => {
-                // Center the design on the shirt
-                const x = (400 - designImg.width) / 2;
-                const y = (400 - designImg.height) / 2 - 20;
-                ctx.drawImage(designImg, x, y);
-
-                // Trigger download
-                const link = document.createElement('a');
-                link.download = 'my-custom-shirt.png';
-                link.href = offscreen.toDataURL('image/png');
-                link.click();
-            }
+            const link = document.createElement('a');
+            link.download = 'my-custom-shirt.png';
+            link.href = offscreen.toDataURL('image/png');
+            link.click();
         }
     }
 
     return (
         <div className='flex flex-col items-center gap-6'>
 
-            {/* Shirt drawn on canvas with color tint */}
-            <div ref={shirtRef} className='flex items-center flex-col h-80 w-80 relative'>
+            {/* Shirt + design canvas stacked — both 400x400 */}
+            <div className='relative' style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}>
+                {/* Shirt with color tint */}
+                <canvas
+                    ref={shirtCanvasRef}
+                    className='absolute top-0 left-0 z-0'
+                    style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
+                />
+                {/* Fabric design canvas — covers full shirt */}
                 <canvas
                     id='canvas'
                     ref={canvasRef}
-                    className='absolute top-20 left-0 z-10 border rounded-2xl border-dashed'
-                />
-                <canvas
-                    ref={shirtCanvasRef}
-                    className='h-96 w-full object-contain relative z-0'
+                    className='absolute top-0 left-0 z-10'
+                    style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
                 />
             </div>
 
@@ -264,16 +234,13 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
                             style={{ backgroundColor: color.value }}
                         />
                     ))}
-                    {/* Custom color input */}
-                    <div className='relative'>
-                        <input
-                            type='color'
-                            value={customColor}
-                            onChange={(e) => handleColorChange(e.target.value)}
-                            className='w-8 h-8 rounded-full cursor-pointer border-2 border-gray-300'
-                            title='Custom color'
-                        />
-                    </div>
+                    <input
+                        type='color'
+                        value={customColor}
+                        onChange={(e) => handleColorChange(e.target.value)}
+                        className='w-8 h-8 rounded-full cursor-pointer border-2 border-gray-300'
+                        title='Custom color'
+                    />
                 </div>
             </div>
 
@@ -291,7 +258,7 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
                     <div
                         key={index}
                         className={`border rounded-lg flex flex-col items-center p-5 justify-center text-sm hover:border-primary cursor-pointer hover:bg-blue-50
-                        ${uploadedImage.includes(item.imageKitTr) ? 'border-primary' : null}`}
+                        ${uploadedImage.includes(item.imageKitTr) ? 'border-primary' : ''}`}
                         onClick={() => onApplyAITransformation(item?.imageKitTr, isTransformationApplied(item?.imageKitTr))}
                     >
                         <item.icon />
@@ -300,7 +267,7 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
                 ))}
             </div>
 
-            {/* Download button */}
+            {/* Download */}
             <button
                 onClick={handleDownload}
                 className='flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors w-full justify-center'
