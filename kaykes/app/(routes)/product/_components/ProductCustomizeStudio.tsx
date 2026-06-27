@@ -270,9 +270,9 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
             {/* Download */}
             <button
                 onClick={handleDownload}
-                className='flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors w-full justify-center'
+                className='flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors w-1/2 justify-center'
             >
-                <Download size={16} />
+                <Download size={13} />
                 Download My Design
             </button>
         </div>
