@@ -222,7 +222,7 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
             </div>
 
             {/* Color picker */}
-            <div className='w-full'>
+            <div className='w-full px-4'>
                 <p className='text-sm font-medium text-gray-600 mb-2'>Shirt Color</p>
                 <div className='flex flex-wrap gap-2 items-center'>
                     {SHIRT_COLORS.map((color) => (
@@ -245,7 +245,7 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
             </div>
 
             {/* Upload + AI tools */}
-            <div className='flex flex-wrap gap-5'>
+            <div className='flex flex-wrap gap-5 px-4'>
                 <label htmlFor='uploadImage'>
                     <div className='border rounded-lg flex flex-col items-center p-5 justify-center text-sm hover:border-primary cursor-pointer hover:bg-blue-50'>
                         <Upload />
@@ -270,9 +270,9 @@ const ProductCustomizeStudio = ({ product, setDesignUrl }: Props) => {
             {/* Download */}
             <button
                 onClick={handleDownload}
-                className='flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors w-1/2 justify-center'
+                className='flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors w-8/12 justify-center md:w-full'
             >
-                <Download size={13} />
+                <Download />
                 Download My Design
             </button>
         </div>
