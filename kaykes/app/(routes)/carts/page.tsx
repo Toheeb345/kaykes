@@ -142,7 +142,7 @@ const GetTotalCartAmount = () => {
 
         <div className="text-right">
           <a
-            href="/products"
+            href="/Products"
             className="inline-block text-sm text-gray-600 underline underline-offset-4 transition-colors hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
           >
             Continue shopping
