@@ -30,6 +30,11 @@ const menu = [
     name: 'Contact Us',
     path: '/'
     },
+    {
+      id: 5,
+      name: 'My Orders',
+      path: '/orders'
+    }
 ]
 
 export type User = {

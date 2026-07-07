@@ -4,6 +4,11 @@ import { CartContext } from '@/context/CartContext'
 import axios from 'axios'
 import React, { useContext } from 'react'
 import { UserDetailContext } from '@/context/UserdetailContext'
+import dynamic from 'next/dynamic'
+
+const CheckoutButton = dynamic(() => import('@/components/ui/CheckoutButton'), {
+  ssr: false
+})
 
 
 type CartItem = {
@@ -126,18 +131,13 @@ const GetTotalCartAmount = () => {
 
         <div className="flex items-center justify-end gap-4">
           <a
-            href="#"
+            href="/orders"
             className="block rounded-sm border border-gray-300 bg-gray-50 px-5 py-3 text-sm text-gray-700 transition-colors hover:text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white"
           >
-            View my cart (2)
+            My orders
           </a>
 
-          <a
-            href="#"
-            className="block rounded-sm border border-blue-600 bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-blue-700 hover:bg-blue-700 dark:border-blue-300 dark:bg-blue-300 dark:text-gray-900 dark:hover:border-blue-200 dark:hover:bg-blue-200"
-          >
-            Checkout
-          </a>
+<CheckoutButton amount={GetTotalCartAmount()} />
         </div>
 
         <div className="text-right">
