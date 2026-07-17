@@ -101,7 +101,7 @@ const Hero: React.FC = () => {
       const left    = lerp(word.scatterX, alignedLeft, lp);
       const top     = lerp(word.scatterY, alignedTop,  lp);
       const fs      = lerp(scatterFont,   alignedFont,  lp);
-      const opacity = lerp(0.06, 1, lp);
+      const opacity = lerp(0.10, 1, lp);
       const weight  = lp > 0.5 ? "800" : "400";
 
       const accentWord  = word.order % 2 === 0;
@@ -339,8 +339,11 @@ const Hero: React.FC = () => {
         }
           @media (max-width: 767px){
             .hero-accent-bar {
-    left: 18px;
+    left: 13px;
   }
+    .hero-copy h1{
+    font-size: 23px;
+    }
           }
       `}</style>
 
@@ -383,7 +386,7 @@ const Hero: React.FC = () => {
                   left:       `${word.scatterX}%`,
                   top:        `${word.scatterY}%`,
                   fontSize:   `${word.fontSizeDesktop}vw`,
-                  opacity:    0.06,
+                  opacity:    0.10,
                   color:      "#c4b5fd",
                   fontWeight: 400,
                 }}
