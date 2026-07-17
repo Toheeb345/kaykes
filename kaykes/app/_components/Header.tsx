@@ -18,7 +18,7 @@ const menu = [
     {
     id: 2,
     name: 'Products',
-    path: '/Products'
+    path: '/'
     },
     {
     id: 3,
