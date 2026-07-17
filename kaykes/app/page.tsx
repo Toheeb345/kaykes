@@ -4,6 +4,7 @@ import Header from "./_components/Header";
 import Hero from "./_components/Hero";
 import Categories from "./_components/Categories";
 import PopularProducts from "./_components/PopularProducts";
+import Footer from "./_components/Footer";
 
 export default function Home() {
   return (
@@ -19,6 +20,7 @@ export default function Home() {
         <PopularProducts />
 
         {/* Footer */}
+        <Footer />
       </div>
   );
 }
